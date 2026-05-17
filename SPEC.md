@@ -1,135 +1,68 @@
-# Polya's Random Walk — SPEC
+# SPEC: Polya's Random Walk — 规格文档
 
-## 1. Project Overview
+## 1. 概念与愿景
 
-**Name**: Polya's Random Walk (波利亚随机游走)
-**Type**: Interactive visualization / educational demo
-**Summary**: 基于波利亚遍历定理的随机游走演示，用户输入步数后，在1D/2D/3D空间中可视化随机游走路径。
-**Target Users**: 数学爱好者、学生、教学演示
+基于**波利亚遍历定理（Polya's Random Walk Theorem, 1912）**的交互式可视化演示。
 
----
+> 一维和二维随机游走是**常返的**（必然无限次返回原点），
+> 三维随机游走是**瞬过的**（有约 34% 的概率永不返回原点）。
 
-## 2. Theorem Background
+用户输入步数，观察随机点在 1D 直线 / 2D 平面 / 3D 空间中的游走轨迹，直观感受维度与"返回原点概率"之间的关系。
 
-**波利亚遍历定理 (Polya's Random Walk Theorem)**:
-- 一维随机游走：**常返的** — 必然返回原点
-- 二维随机游走：**常返的** — 必然返回原点  
-- 三维随机游走：**瞬过的** — 可能永远不返回原点
+## 2. 设计语言
 
----
+**美学方向**：赛博朋克暗色风格，霓虹蓝/青/红渐变，JetBrains Mono 等宽字体。
 
-## 3. Visual & Rendering Specification
+**配色**：
+- 背景 `#0a0a0f`，面板 `#12121a`，边框 `#1e1e2e`
+- 主色 `#4facfe`（蓝），辅色 `#00f2fe`（青），高亮 `#ffd700`（金原点），当前点 `#ff6b6b`（红）
 
-### Scene Setup
-- **1D**: 水平线动画，点在线上左右随机移动
-- **2D**: 2D Canvas网格，点的随机游走路径绘制
-- **3D**: Three.js 3D网格，轨迹线 + 散点
+**字体**：JetBrains Mono + Noto Sans SC
 
-### Camera & Controls
-- 1D: 固定视角
-- 2D: 固定正交视角，拖拽平移
-- 3D: OrbitControls 旋转/缩放
+## 3. 功能清单
 
-### Lighting & Environment
-- 暗色主题背景 (#0a0a0f)
-- 网格线: 细线框风格
-- 轨迹: 渐变色发光效果
+### 核心功能
+- [x] **1D 模式**：Canvas 渲染，水平线上的往返游走
+- [x] **2D 模式**：Canvas 网格平面，东南西北四方向随机游走
+- [x] **3D 模式**：Three.js 渲染，球面坐标轨道相机，支持鼠标拖拽/滚轮缩放
+- [x] **颜色渐变**：轨迹从起点蓝渐变到当前点红
+- [x] **原点标记**：金色圆点标记原点位置
+- [x] **实时统计**：当前步数、坐标、是否已访问原点、最大曼哈顿距离
 
-### Materials & Effects
-- 轨迹线: 颜色随步数渐变 (蓝→青→绿→黄→红)
-- 当前位置: 发光球体
-- 原点: 特殊标记 (金色)
-- 已访问点: 淡化显示
+### 新增功能（v2）
+- [x] **批量游走**：可设置同时游走的轨迹数量（N 条），观察统计分布
+- [x] **原点返回率面板**：3D 模式下实时显示理论值（34%）与实际返回率对比
+- [x] **播放控制**：单条轨迹完成后可暂停/步进/回退
+- [x] **数据导出**：一键复制轨迹为 CSV 或 JSON 格式
+- [x] **试验摘要**：多条轨迹时显示汇总统计（返回率、最大距离均值）
 
-### Color Palette
-- Background: #0a0a0f (deep dark)
-- Grid lines: #1a1a2e (subtle blue-gray)
-- Origin marker: #ffd700 (gold)
-- Current position: #ff6b6b (coral red)
-- Trail gradient: #4facfe → #00f2fe → #43e97b → #f6d365 → #ff6b6b
+### 性能优化
+- [x] **离屏 Canvas 缓存**：1D/2D 每帧只绘制最新一段轨迹线段，缓存历史轨迹到离屏 Canvas，避免 O(N²) 全量重绘
+- [x] **3D 批量添加**：每帧重建轨迹时复用 group 清理逻辑，避免内存泄漏
 
----
+## 4. 技术方案
 
-## 4. Simulation Specification
+- **纯前端单文件**：`index.html` 包含所有 HTML/CSS/JS，无构建步骤
+- **1D/2D 渲染**：原生 Canvas 2D API
+- **3D 渲染**：Three.js r128（CDN）
+- **无后端**：所有计算在浏览器端完成
+- **CDN 依赖**：
+  - Three.js：`https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js`
+  - Google Fonts：JetBrains Mono + Noto Sans SC
 
-### Random Walk Algorithm
-- 每步在每个维度上随机选择 ±1
-- 1D: `x += random.choice([-1, 1])`
-- 2D: `x += random.choice([-1, 1]), y += random.choice([-1, 1])`
-- 3D: `x += random.choice([-1, 1]), y += random.choice([-1, 1]), z += random.choice([-1, 1])`
+## 5. 随机游走数学
 
-### Animation
-- 步进模式: 逐步动画 (可调速度 10ms-500ms/步)
-- 或直接渲染模式 (输入N，直接显示N步结果)
-- 默认: 直接渲染 + 可重播动画
-
-### Statistics Display
-- 当前坐标
-- 步数
-- 是否返回过原点 (仅2D/3D)
-- 总曼哈顿距离
-
----
-
-## 5. Interaction Specification
-
-### Controls
-- **步数输入**: 正整数输入框 (1-10000)
-- **维度切换**: 三个Tab按钮 (1D / 2D / 3D)
-- **开始按钮**: 执行随机游走
-- **重置按钮**: 清除当前路径
-- **速度滑块**: 动画速度 (仅动画模式)
-
-### UI Layout
-```
-┌─────────────────────────────────┐
-│  Polya's Random Walk (波利亚随机游走)  │
-├─────────────────────────────────┤
-│  [1D] [2D] [3D]                 │
-│  ┌───────────────────────────┐  │
-│  │                           │  │
-│  │     Canvas / WebGL       │  │
-│  │                           │  │
-│  └───────────────────────────┘  │
-│  Step: 0/1000  |  Position: (0,0)│
-│  [Start] [Reset] [Speed: ████]  │
-└─────────────────────────────────┘
-```
-
-### Font
-- 标题: JetBrains Mono 或 monospace
-- 正文: system-ui
-
----
-
-## 6. Acceptance Criteria
-
-1. ✅ 输入正整数N，程序在对应维度执行N步随机游走
-2. ✅ 1D模式: 水平线上显示点的移动轨迹
-3. ✅ 2D模式: 网格上显示2D随机游走路径
-4. ✅ 3D模式: Three.js渲染3D随机游走，可旋转缩放
-5. ✅ 颜色渐变显示轨迹历史
-6. ✅ 显示原点标记和当前位置
-7. ✅ 实时显示统计信息 (步数、坐标、是否返回原点)
-8. ✅ 响应式设计，支持不同屏幕尺寸
-9. ✅ 代码上传至GitHub
-
----
-
-## 7. Tech Stack
-
-- **纯前端**: HTML5 + CSS3 + JavaScript
-- **2D渲染**: HTML5 Canvas
-- **3D渲染**: Three.js (CDN)
-- **无构建工具**: 单HTML文件可直接运行
-
----
-
-## 8. File Structure
+每步在各维度独立随机选择方向：
 
 ```
-polya-random-walk/
-├── SPEC.md
-├── index.html      # 主程序 (单文件)
-└── README.md       # 项目说明
+1D:  X_{n+1} = X_n + (±1)
+2D:  X_{n+1} = X_n + (±1, 0)  或  Y_{n+1} = Y_n + (0, ±1)
+3D:  三个维度各独立随机 ±1
 ```
+
+**波利亚定理（1912）**：
+- d = 1, 2：返回概率 = 1（常返）
+- d ≥ 3：返回概率 < 1（瞬过）
+- d = 3：精确返回概率 ≈ **0.3405**（34%）
+
+**扩散行为**：E[X_n²] ∝ n（方差随步数线性增长）
