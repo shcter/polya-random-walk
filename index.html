@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polya's Random Walk — 波利亚随机游走</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap');
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --text: #e0e0e0;
+      --text-dim: #888;
+      --accent: #4facfe;
+      --accent2: #00f2fe;
+      --gold: #ffd700;
+      --coral: #ff6b6b;
+      --green: #43e97b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', 'Noto Sans SC', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .theorem-badge {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      text-align: center;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tab-group {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .tab {
+      padding: 0.5rem 1.2rem;
+      background: var(--surface);
+      border: none;
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { color: var(--text); }
+
+    .tab.active {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+
+    input[type="number"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.8rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      width: 120px;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      padding: 0.5rem 1.2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    button.primary:hover {
+      background: var(--accent2);
+      border-color: var(--accent2);
+      color: #000;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: min(90vw, 600px);
+      height: min(90vw, 600px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg);
+      margin-bottom: 1rem;
+    }
+
+    #canvas1d, #canvas2d {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #canvas3d {
+      width: 100%;
+      height: 100%;
+    }
+
+    .stats {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 0.78rem;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .stat-label {
+      color: var(--text-dim);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .stat-value.gold { color: var(--gold); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.coral { color: var(--coral); }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    input[type="range"] {
+      width: 100px;
+      accent-color: var(--accent);
+    }
+
+    .legend {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-line {
+      width: 20px;
+      height: 3px;
+      border-radius: 2px;
+    }
+
+    .legend-dot.origin { background: var(--gold); }
+    .legend-dot.current { background: var(--coral); box-shadow: 0 0 6px var(--coral); }
+    .legend-line.trail { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+
+    footer {
+      margin-top: 1rem;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Polya's Random Walk</h1>
+  <p class="theorem-badge">
+    波利亚遍历定理：一维与二维随机游走为<strong>常返的</strong>（必然返回原点），<br>
+    三维随机游走为<strong>瞬过的</strong>（可能永不返回原点）
+  </p>
+
+  <div class="controls">
+    <div class="tab-group">
+      <button class="tab active" data-dim="1">1D</button>
+      <button class="tab" data-dim="2">2D</button>
+      <button class="tab" data-dim="3">3D</button>
+    </div>
+    <input type="number" id="stepsInput" value="500" min="1" max="50000" placeholder="步数" />
+    <button class="primary" id="startBtn">Start</button>
+    <button id="resetBtn">Reset</button>
+    <div class="speed-control">
+      <span>Speed:</span>
+      <input type="range" id="speedSlider" min="1" max="200" value="50" />
+    </div>
+  </div>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="canvas1d"></canvas>
+    <canvas id="canvas2d" style="display:none"></canvas>
+    <div id="canvas3d" style="display:none"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-label">Step</span>
+      <span class="stat-value" id="statStep">0 / 0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Position</span>
+      <span class="stat-value" id="statPos">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Origin Visited</span>
+      <span class="stat-value green" id="statOrigin">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Max Distance</span>
+      <span class="stat-value" id="statDist">—</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot origin"></div> Origin (0,0)</div>
+    <div class="legend-item"><div class="legend-dot current"></div> Current</div>
+    <div class="legend-item"><div class="legend-line trail"></div> Trail</div>
+  </div>
+
+  <footer>
+    Built with Canvas + Three.js · 基于波利亚遍历定理
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // ─── State ───────────────────────────────────────────────────────
+    let currentDim = 1;
+    let steps = 500;
+    let animating = false;
+    let animId = null;
+    let positions = [];
+    let stepIndex = 0;
+    let originVisited = false;
+    let maxDist = 0;
+
+    // Three.js globals for 3D
+    let scene, camera, renderer, orbitControls;
+    let trailLine, currentSphere, originMarker;
+
+    // ─── DOM refs ────────────────────────────────────────────────────
+    const tabs = document.querySelectorAll('.tab');
+    const stepsInput = document.getElementById('stepsInput');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const canvas1d = document.getElementById('canvas1d');
+    const canvas2d = document.getElementById('canvas2d');
+    const canvas3d = document.getElementById('canvas3d');
+    const statStep = document.getElementById('statStep');
+    const statPos = document.getElementById('statPos');
+    const statOrigin = document.getElementById('statOrigin');
+    const statDist = document.getElementById('statDist');
+
+    // ─── Tab switching ────────────────────────────────────────────────
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentDim = parseInt(tab.dataset.dim);
+        reset();
+        showCanvas();
+      });
+    });
+
+    function showCanvas() {
+      canvas1d.style.display = currentDim === 1 ? 'block' : 'none';
+      canvas2d.style.display = currentDim === 2 ? 'block' : 'none';
+      canvas3d.style.display = currentDim === 3 ? 'block' : 'none';
+      if (currentDim === 3) {
+        initThreeJS();
+      }
+    }
+
+    // ─── Random Walk Generator ────────────────────────────────────────
+    function generateWalk(dim, n) {
+      const points = [[0, 0, 0]];
+      let p = [0, 0, 0];
+      for (let i = 0; i < n; i++) {
+        if (dim >= 1) p[0] += Math.random() < 0.5 ? 1 : -1;
+        if (dim >= 2) p[1] += Math.random() < 0.5 ? 1 : -1;
+        if (dim >= 3) p[2] += Math.random() < 0.5 ? 1 : -1;
+        points.push([...p]);
+      }
+      return points;
+    }
+
+    // ─── Start / Reset ────────────────────────────────────────────────
+    startBtn.addEventListener('click', () => {
+      if (animating) return;
+      steps = parseInt(stepsInput.value) || 500;
+      reset();
+      animating = true;
+      positions = [[0, 0, 0]];
+      stepIndex = 0;
+      originVisited = false;
+      maxDist = 0;
+      startBtn.textContent = 'Running...';
+      startBtn.disabled = true;
+      animate();
+    });
+
+    resetBtn.addEventListener('click', reset);
+
+    function reset() {
+      animating = false;
+      if (animId) cancelAnimationFrame(animId);
+      positions = [];
+      stepIndex = 0;
+      originVisited = false;
+      maxDist = 0;
+      startBtn.textContent = 'Start';
+      startBtn.disabled = false;
+      statStep.textContent = '0 / 0';
+      statPos.textContent = '—';
+      statOrigin.textContent = '—';
+      statDist.textContent = '—';
+      clear1D();
+      clear2D();
+      clear3D();
+    }
+
+    // ─── Animation ────────────────────────────────────────────────────
+    function animate() {
+      if (!animating) return;
+      const speed = 210 - parseInt(speedSlider.value);
+
+      const p = positions[positions.length - 1].slice();
+
+      // advance 1 step
+      if (currentDim >= 1) p[0] += Math.random() < 0.5 ? 1 : -1;
+      if (currentDim >= 2) p[1] += Math.random() < 0.5 ? 1 : -1;
+      if (currentDim >= 3) p[2] += Math.random() < 0.5 ? 1 : -1;
+
+      positions.push(p);
+      stepIndex++;
+
+      // stats
+      const dist = Math.abs(p[0]) + (currentDim >= 2 ? Math.abs(p[1]) : 0) + (currentDim >= 3 ? Math.abs(p[2]) : 0);
+      if (dist > maxDist) maxDist = dist;
+      if (p[0] === 0 && (currentDim === 1 || p[1] === 0) && (currentDim < 3 || p[2] === 0)) {
+        originVisited = true;
+      }
+
+      renderCurrent();
+
+      // update stats every frame
+      statStep.textContent = `${stepIndex} / ${steps}`;
+      const posStr = currentDim === 1 ? `(${p[0]})` : currentDim === 2 ? `(${p[0]}, ${p[1]})` : `(${p[0]}, ${p[1]}, ${p[2]})`;
+      statPos.textContent = posStr;
+      statOrigin.textContent = originVisited ? '✓ Yes' : '✗ No';
+      statOrigin.className = 'stat-value ' + (originVisited ? 'green' : 'coral');
+      statDist.textContent = maxDist;
+
+      if (stepIndex >= steps) {
+        animating = false;
+        startBtn.textContent = 'Done';
+        startBtn.disabled = false;
+        return;
+      }
+
+      animId = setTimeout(() => requestAnimationFrame(animate), speed);
+    }
+
+    function renderCurrent() {
+      if (currentDim === 1) draw1D();
+      else if (currentDim === 2) draw2D();
+      else if (currentDim === 3) draw3D();
+    }
+
+    // ─── 1D Canvas ───────────────────────────────────────────────────
+    function clear1D() {
+      const ctx = canvas1d.getContext('2d');
+      ctx.clearRect(0, 0, canvas1d.width, canvas1d.height);
+    }
+
+    function draw1D() {
+      const ctx = canvas1d.getContext('2d');
+      const W = canvas1d.width = canvas1d.offsetWidth * devicePixelRatio;
+      const H = canvas1d.height = canvas1d.offsetHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      const w = canvas1d.offsetWidth;
+      const h = canvas1d.offsetHeight;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // find range
+      const xs = positions.map(p => p[0]);
+      const minX = Math.min(...xs, -10);
+      const maxX = Math.max(...xs, 10);
+      const range = Math.max(maxX - minX, 20) + 4;
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = (w * 0.8) / range;
+
+      // draw axis
+      ctx.strokeStyle = '#1e1e2e';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, cy);
+      ctx.lineTo(w, cy);
+      ctx.stroke();
+
+      // tick marks
+      ctx.fillStyle = '#444';
+      ctx.font = '10px JetBrains Mono';
+      for (let x = Math.ceil(minX); x <= maxX; x++) {
+        const sx = cx + x * scale;
+        ctx.beginPath();
+        ctx.moveTo(sx, cy - 4);
+        ctx.lineTo(sx, cy + 4);
+        ctx.stroke();
+        if (x % 5 === 0) {
+          ctx.fillText(x, sx - 6, cy + 14);
+        }
+      }
+
+      // draw trail
+      if (positions.length > 1) {
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, '#4facfe');
+        grad.addColorStop(0.5, '#00f2fe');
+        grad.addColorStop(1, '#ff6b6b');
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < positions.length; i++) {
+          const sx = cx + positions[i][0] * scale;
+          i === 0 ? ctx.moveTo(sx, cy) : ctx.lineTo(sx, cy);
+        }
+        ctx.stroke();
+      }
+
+      // origin marker
+      const ox = cx;
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(ox, cy, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // current position
+      if (positions.length > 0) {
+        const px = cx + positions[positions.length - 1][0] * scale;
+        ctx.fillStyle = '#ff6b6b';
+        ctx.shadowColor = '#ff6b6b';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(px, cy, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // ─── 2D Canvas ───────────────────────────────────────────────────
+    function clear2D() {
+      const ctx = canvas2d.getContext('2d');
+      ctx.clearRect(0, 0, canvas2d.width, canvas2d.height);
+    }
+
+    function draw2D() {
+      const ctx = canvas2d.getContext('2d');
+      const W = canvas2d.width = canvas2d.offsetWidth * devicePixelRatio;
+      const H = canvas2d.height = canvas2d.offsetHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      const w = canvas2d.offsetWidth;
+      const h = canvas2d.offsetHeight;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const xs = positions.map(p => p[0]);
+      const ys = positions.map(p => p[1]);
+      const minX = Math.min(...xs, -10), maxX = Math.max(...xs, 10);
+      const minY = Math.min(...ys, -10), maxY = Math.max(...ys, 10);
+      const rangeX = Math.max(maxX - minX, 20) + 4;
+      const rangeY = Math.max(maxY - minY, 20) + 4;
+      const scaleX = (w * 0.85) / rangeX;
+      const scaleY = (h * 0.85) / rangeY;
+      const scale = Math.min(scaleX, scaleY);
+      const cx = w / 2 - ((minX + maxX) / 2) * scale;
+      const cy = h / 2 - ((minY + maxY) / 2) * scale;
+
+      const toScreen = (x, y) => [cx + x * scale, cy - y * scale];
+
+      // grid
+      ctx.strokeStyle = '#1a1a2e';
+      ctx.lineWidth = 0.5;
+      const gridStep = 10;
+      for (let x = Math.ceil(minX / gridStep) * gridStep; x <= maxX; x += gridStep) {
+        const [sx] = toScreen(x, 0);
+        ctx.beginPath();
+        ctx.moveTo(sx, 0);
+        ctx.lineTo(sx, h);
+        ctx.stroke();
+      }
+      for (let y = Math.ceil(minY / gridStep) * gridStep; y <= maxY; y += gridStep) {
+        const [, sy] = toScreen(0, y);
+        ctx.beginPath();
+        ctx.moveTo(0, sy);
+        ctx.lineTo(w, sy);
+        ctx.stroke();
+      }
+
+      // axes
+      ctx.strokeStyle = '#2a2a3e';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const [ax0, ay0] = toScreen(0, 0);
+      ctx.moveTo(0, ay0); ctx.lineTo(w, ay0);
+      ctx.moveTo(ax0, 0); ctx.lineTo(ax0, h);
+      ctx.stroke();
+
+      // trail with gradient
+      if (positions.length > 1) {
+        for (let i = 1; i < positions.length; i++) {
+          const t = i / positions.length;
+          const r = Math.round(79 + t * (255 - 79));
+          const g = Math.round(172 + t * (107 - 172));
+          const b = Math.round(254 + t * (107 - 254));
+          ctx.strokeStyle = `rgb(${r},${g},${b})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          const [x1, y1] = toScreen(positions[i-1][0], positions[i-1][1]);
+          const [x2, y2] = toScreen(positions[i][0], positions[i][1]);
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+      }
+
+      // origin
+      const [ox, oy] = toScreen(0, 0);
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // current
+      if (positions.length > 0) {
+        const [px, py] = toScreen(positions[positions.length-1][0], positions[positions.length-1][1]);
+        ctx.fillStyle = '#ff6b6b';
+        ctx.shadowColor = '#ff6b6b';
+        ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // ─── Three.js 3D ─────────────────────────────────────────────────
+    function initThreeJS() {
+      if (!scene) {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0f);
+
+        const wrap = document.getElementById('canvasWrap');
+        const w = wrap.offsetWidth;
+        const h = wrap.offsetHeight;
+
+        camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000);
+        camera.position.set(30, 20, 30);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true });
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(devicePixelRatio);
+
+        // lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+        dir.position.set(10, 20, 10);
+        scene.add(dir);
+
+        // grid helper
+        const grid = new THREE.GridHelper(60, 30, 0x1e1e2e, 0x1a1a2e);
+        scene.add(grid);
+
+        // axes
+        const axLen = 40;
+        const axGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-axLen, 0, 0), new THREE.Vector3(axLen, 0, 0),
+          new THREE.Vector3(0, -axLen, 0), new THREE.Vector3(0, axLen, 0),
+          new THREE.Vector3(0, 0, -axLen), new THREE.Vector3(0, 0, axLen),
+        ]);
+        scene.add(new THREE.Line(axGeo, new THREE.LineBasicMaterial({ color: 0x2a2a4e })));
+
+        // origin marker
+        const originGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const originMat = new THREE.MeshPhongMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.3 });
+        originMarker = new THREE.Mesh(originGeo, originMat);
+        scene.add(originMarker);
+
+        // current position sphere
+        const currGeo = new THREE.SphereGeometry(0.6, 16, 16);
+        const currMat = new THREE.MeshPhongMaterial({ color: 0xff6b6b, emissive: 0xff6b6b, emissiveIntensity: 0.5 });
+        currentSphere = new THREE.Mesh(currGeo, currMat);
+        scene.add(currentSphere);
+
+        // simple orbit controls (manual)
+        setupOrbitControls();
+        animate3D();
+      }
+    }
+
+    let isDragging = false;
+    let prevMouse = { x: 0, y: 0 };
+    let spherical = { theta: Math.PI / 4, phi: Math.PI / 4, r: 50 };
+    let autoRotate = true;
+
+    function setupOrbitControls() {
+      const c3d = canvas3d;
+      c3d.addEventListener('mousedown', e => {
+        isDragging = true;
+        prevMouse = { x: e.clientX, y: e.clientY };
+        autoRotate = false;
+      });
+      c3d.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevMouse.x;
+        const dy = e.clientY - prevMouse.y;
+        spherical.theta -= dx * 0.01;
+        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi - dy * 0.01));
+        prevMouse = { x: e.clientX, y: e.clientY };
+        updateCamera();
+      });
+      c3d.addEventListener('mouseup', () => isDragging = false);
+      c3d.addEventListener('mouseleave', () => isDragging = false);
+      c3d.addEventListener('wheel', e => {
+        e.preventDefault();
+        spherical.r = Math.max(5, Math.min(200, spherical.r + e.deltaY * 0.1));
+        updateCamera();
+      }, { passive: false });
+
+      // touch
+      c3d.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          autoRotate = false;
+        }
+      });
+      c3d.addEventListener('touchmove', e => {
+        if (!isDragging || e.touches.length !== 1) return;
+        e.preventDefault();
+        const dx = e.touches[0].clientX - prevMouse.x;
+        const dy = e.touches[0].clientY - prevMouse.y;
+        spherical.theta -= dx * 0.01;
+        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi - dy * 0.01));
+        prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        updateCamera();
+      }, { passive: false });
+      c3d.addEventListener('touchend', () => isDragging = false);
+    }
+
+    function updateCamera() {
+      const { theta, phi, r } = spherical;
+      camera.position.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+      camera.lookAt(0, 0, 0);
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      if (autoRotate) {
+        spherical.theta += 0.003;
+        updateCamera();
+      }
+      renderer.render(scene, camera);
+    }
+
+    function clear3D() {
+      if (!scene) return;
+      if (trailLine) { scene.remove(trailLine); trailLine.geometry.dispose(); trailLine.material.dispose(); trailLine = null; }
+      currentSphere && (currentSphere.visible = false);
+    }
+
+    function draw3D() {
+      if (!scene) return;
+
+      const pos = positions[positions.length - 1];
+      currentSphere.visible = true;
+      currentSphere.position.set(pos[0], pos[1], pos[2]);
+
+      // rebuild trail line
+      if (trailLine) { scene.remove(trailLine); trailLine.geometry.dispose(); trailLine.material.dispose(); }
+      if (positions.length > 1) {
+        const points = positions.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const mat = new THREE.LineBasicMaterial({ color: 0x4facfe, linewidth: 1 });
+        trailLine = new THREE.Line(geo, mat);
+        scene.add(trailLine);
+      }
+
+      // auto-frame: lerp camera target to center of mass
+      if (positions.length > 1) {
+        const avgX = positions.reduce((s, p) => s + p[0], 0) / positions.length;
+        const avgY = positions.reduce((s, p) => s + p[1], 0) / positions.length;
+        const avgZ = positions.reduce((s, p) => s + p[2], 0) / positions.length;
+        // gentle — just keep orbit working, no dramatic camera moves
+      }
+    }
+
+    // ─── Resize handler ───────────────────────────────────────────────
+    window.addEventListener('resize', () => {
+      if (currentDim === 3 && renderer) {
+        const wrap = document.getElementById('canvasWrap');
+        const w = wrap.offsetWidth;
+        const h = wrap.offsetHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+    });
+
+    // ─── Init ─────────────────────────────────────────────────────────
+    showCanvas();
+  </script>
+</body>
+</html>
